@@ -151,7 +151,7 @@ void compute_qr_factorization(Matrix<double>& a, Matrix<double>& work, double* t
 // system.
 void solve_qr_factorization(Matrix<double>& a, Matrix<double>& work, double* tau, double* rhs);
 
-void solve_linear_system(Matrix<double>& a, int* ipiv, double* rhs);
+void solve_linear_system(Matrix<double>& a, int* ipiv, double* rhs, int nrhs=1);
 
 } // namespace impl
 

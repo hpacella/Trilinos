@@ -110,10 +110,9 @@ void solve_qr_factorization(Matrix<double>& a, Matrix<double>& work, double* tau
   solve_upper_triangular(a, rhs);
 }
 
-void solve_linear_system(Matrix<double>& a, int* ipiv, double* rhs)
+void solve_linear_system(Matrix<double>& a, int* ipiv, double* rhs, int nrhs)
 {
   int info        = -1;
-  int val         = 1;
   int n           = a.extent0();
   const char flag = 'T';
 
@@ -122,7 +121,7 @@ void solve_linear_system(Matrix<double>& a, int* ipiv, double* rhs)
   if (info != 0)
     throw std::runtime_error("dgetrf returned an error value: " + std::to_string(info));
 
-  SIERRA_FORTRAN(dgetrs)(&flag, &n, &val, a.data(), &n, ipiv, rhs, &n, &info);
+  SIERRA_FORTRAN(dgetrs)(&flag, &n, &nrhs, a.data(), &n, ipiv, rhs, &n, &info);
 
   if (info != 0)
     throw std::runtime_error("dgetrs returned an error value: " + std::to_string(info));

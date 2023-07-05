@@ -21,7 +21,7 @@ namespace middle_mesh {
 
 using namespace mesh::impl;
 using namespace utils::impl;
-using namespace stk_interface::impl;
+using stk_interface::StkMeshCreator;
 
 namespace {
 
@@ -87,7 +87,7 @@ TEST(MeshQualityImprover, AnnulusRotation)
 
     // printVertEdges("mesh_initial", mesh2);
 
-    auto bsnapper = make_incremental_boundary_snapper(mesh1, mesh2);
+    auto bsnapper = make_incremental_boundary_snapper(mesh1, mesh2, MPI_COMM_WORLD);
     bsnapper->snap();
 
     // printVertEdges("mesh_snapped", mesh2);
@@ -146,7 +146,7 @@ TEST(MeshQualityImprover, Ellipsoid)
     // printVertEdges("mesh1_initial", mesh1);
     // printVertEdges("mesh2_initial", mesh2);
 
-    auto bsnapper = make_incremental_boundary_snapper(mesh1, mesh2);
+    auto bsnapper = make_incremental_boundary_snapper(mesh1, mesh2, MPI_COMM_WORLD);
     bsnapper->snap();
     std::cout << "after boundary snapper, number of invalid verts = "
               << bsnapper->get_mesh2_quality_improver()->count_invalid_points() << std::endl;
@@ -186,7 +186,7 @@ TEST(MeshQualityImprover, EllipsoidFromCAD)
     // printVertEdges("mesh1_initial", mesh1);
     // printVertEdges("mesh2_initial", mesh2);
 
-    auto bsnapper = make_incremental_boundary_snapper(mesh1, mesh2);
+    auto bsnapper = make_incremental_boundary_snapper(mesh1, mesh2, MPI_COMM_WORLD);
     bsnapper->snap();
     std::cout << "after boundary snapper, number of invalid verts = "
               << bsnapper->get_mesh2_quality_improver()->count_invalid_points() << std::endl;
@@ -234,7 +234,7 @@ TEST(MeshQualityImprover, AnnulusRefining)
     auto qualityObj = std::make_shared<PatchDistortionObjective>(metric);
     MeshQualityStatistics qualityStatistics(mesh2, qualityObj);
 
-    auto bsnapper = make_incremental_boundary_snapper(mesh1, mesh2);
+    auto bsnapper = make_incremental_boundary_snapper(mesh1, mesh2, MPI_COMM_WORLD);
     bsnapper->snap();
 
     std::cout << "after snap mesh1 surface error: ";
@@ -313,7 +313,7 @@ TEST(MeshQualityImprover, InclinePlaneRefining)
     // printVertEdges("mesh1_initial", mesh1);
     // printVertEdges("mesh2_initial", mesh2);
 
-    auto bsnapper = make_incremental_boundary_snapper(mesh1, mesh2);
+    auto bsnapper = make_incremental_boundary_snapper(mesh1, mesh2, MPI_COMM_WORLD);
     bsnapper->snap();
 
     // printVertEdges("mesh1_snapped", mesh1);
@@ -370,7 +370,7 @@ TEST(MeshQualityImprover, TorusRotation)
 
     // printVertEdges("mesh_initial", mesh2);
 
-    auto bsnapper = make_incremental_boundary_snapper(mesh1, mesh2);
+    auto bsnapper = make_incremental_boundary_snapper(mesh1, mesh2, MPI_COMM_WORLD);
     bsnapper->snap();
 
     // printVertEdges("mesh_snapped", mesh2);
@@ -411,7 +411,7 @@ TEST(MeshQualityImprover, EigthSphereRefining)
     // printVertEdges("mesh1_initial", mesh1);
     // printVertEdges("mesh2_initial", mesh2);
 
-    auto bsnapper = make_incremental_boundary_snapper(mesh1, mesh2);
+    auto bsnapper = make_incremental_boundary_snapper(mesh1, mesh2, MPI_COMM_WORLD);
     bsnapper->snap();
 
     std::cout << "after snap mesh1 surface error: ";

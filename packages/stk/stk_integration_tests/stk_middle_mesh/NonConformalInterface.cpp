@@ -18,7 +18,7 @@ namespace middle_mesh {
 using namespace nonconformal4::impl;
 using namespace utils::impl;
 using namespace mesh::impl;
-using namespace stk_interface::impl;
+using stk_interface::StkMeshCreator;
 
 TEST(Interface, EigthSphereNew)
 {
@@ -261,10 +261,10 @@ TEST(Interface, EllipsoidFromCADNew)
   {
     //ssssssdouble tStart = MPI_Wtime();
     std::cout << "mesh " << i << " / " << nmeshes << std::endl;
-    StkMeshCreator creator1(meshPath + fnames[0]);
+    stk_interface::StkMeshCreator creator1(meshPath + fnames[0]);
     std::shared_ptr<mesh::Mesh> mesh1 = creator1.create_mesh_from_part("block_1").mesh;
 
-    StkMeshCreator creator2(meshPath + fnames[i]);
+    stk_interface::StkMeshCreator creator2(meshPath + fnames[i]);
     std::shared_ptr<mesh::Mesh> mesh2 = creator2.create_mesh_from_part("block_1").mesh;
 
     std::cout << "mesh2 number of elements = " << mesh2->get_elements().size() << std::endl;

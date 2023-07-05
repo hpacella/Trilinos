@@ -3,6 +3,8 @@
 #include "stk_middle_mesh/distortion_metric.hpp"
 #include "stk_middle_mesh/regularized_distortion_metric.hpp"
 
+#include <fstream>
+
 namespace stk {
 namespace middle_mesh {
 namespace impl {
@@ -320,6 +322,24 @@ TEST(DistortionMetric, Regression)
   std::cout << "det3 = " << det3 << std::endl;
   std::cout << "det4 = " << det4 << std::endl;
   std::cout << "W2 = " << w2 << std::endl;
+}
+
+TEST(RegularizedDistortionMetric, Regression2)
+{
+  TriPts pts = { utils::Point(0.875, 0.875, 0), utils::Point(1, 0.75, 0), utils::Point(0.75, 1, 0) };
+  utils::impl::Mat2x2<double> W = {0.25, 0, 0, 0.25};
+  double delta = 1e-1;
+  int localidx = 0;
+
+  RegularizedDistortionMetric metric(delta);
+
+  TriPts derivs;
+  metric.get_deriv(pts, W, derivs, 1);
+
+  EXPECT_GT(std::abs(derivs[localidx][0]), 0.01);
+  EXPECT_GT(std::abs(derivs[localidx][1]), 0.01);
+
+  std::cout << "local derivs = " << derivs[localidx] << std::endl;
 }
 
 } // namespace impl

@@ -27,25 +27,20 @@ double PatchDistortionObjective::compute_quality(const utils::Point& ptIn)
   return q;
 }
 
+
 // computes derivative of computeQuality wrt the active vert only
 // Computes derivative wrt the parameterized coords
 // pt is the current position of the active vert
 utils::Point PatchDistortionObjective::compute_quality_rev(const utils::Point& ptIn, double q3Bar)
 {
-  // std::cout << "\nEntered computeQuality_rev" << std::endl;
   utils::impl::Matrix<utils::Point> triPts;
   std::vector<utils::impl::Mat2x2<double>> wMats;
   compute_parameterization(ptIn, triPts, wMats);
 
   double q = 0;
   for (int i = 0; i < m_data->get_num_elements(); ++i)
-  // for (int i=0; i < 1; ++i)
   {
     TriPts ptsI{triPts(i, 0), triPts(i, 1), triPts(i, 2)};
-
-    //    auto W = DistortionMetric::computeW(pts_i);
-    //    if (det2x2(W) > 0)
-    //      continue;
 
     double qI = m_metric->get_value(ptsI, wMats[i]);
 
@@ -54,7 +49,6 @@ utils::Point PatchDistortionObjective::compute_quality_rev(const utils::Point& p
   }
 
   double q2 = q / m_data->get_num_elements();
-  // double q3 = std::sqrt(q2);
 
   //-------------------------------
   // reverse
@@ -63,12 +57,9 @@ utils::Point PatchDistortionObjective::compute_quality_rev(const utils::Point& p
 
   utils::Point activePtBar;
   for (int i = 0; i < m_data->get_num_elements(); ++i)
-  // for (int i=0; i < 1; ++i)
-  {
+  {    
     TriPts ptsI{triPts(i, 0), triPts(i, 1), triPts(i, 2)};
-    //    auto W = DistortionMetric::computeW(pts_i);
-    //    if (det2x2(W) > 0)
-    //      continue;
+
 
     double qI = m_metric->get_value(ptsI, wMats[i]);
 
@@ -81,11 +72,13 @@ utils::Point PatchDistortionObjective::compute_quality_rev(const utils::Point& p
 
     // accumulate only active vert
     int idx = m_data->get_current_vert_idx(i);
+
     activePtBar += ptsIBar[idx];
   }
 
   return activePtBar;
 }
+
 
 utils::impl::Mat2x2<double> PatchDistortionObjective::compute_hessian(const utils::Point& ptIn)
 {
@@ -99,13 +92,8 @@ utils::impl::Mat2x2<double> PatchDistortionObjective::compute_hessian(const util
   double q = 0;
   DotVec qDot{};
   for (int i = 0; i < m_data->get_num_elements(); ++i)
-  // for (int i=0; i < 1; ++i)
   {
     TriPts ptsI{triPts(i, 0), triPts(i, 1), triPts(i, 2)}, ptsIDot;
-
-    //    auto W = DistortionMetric::computeW(pts_i);
-    //    if (det2x2(W) > 0)
-    //      continue;
 
     double qI = m_metric->get_value(ptsI, wMats[i]);
     m_metric->get_deriv(ptsI, wMats[i], ptsIDot, 1);
@@ -147,15 +135,13 @@ utils::impl::Mat2x2<double> PatchDistortionObjective::compute_hessian(const util
                                               //  active_pt_bar_dot(1, 1) = 0;
 
   for (int i = 0; i < m_data->get_num_elements(); ++i)
-  // for (int i=0; i < 1; ++i)
   {
     TriPts ptsI{triPts(i, 0), triPts(i, 1), triPts(i, 2)}, ptsIBar;
-    //    auto W = DistortionMetric::computeW(pts_i);
-    //    if (det2x2(W) > 0)
-    //      continue;
+
 
     double qI = m_metric->get_value(ptsI, wMats[i]);
     m_metric->get_deriv(ptsI, wMats[i], ptsIBar, 1);
+
 
     int idx = m_data->get_current_vert_idx(i);
     DotVec qIDot;

@@ -528,14 +528,29 @@ void BulkData::require_good_rank_and_id(EntityRank ent_rank, EntityId ent_id) co
 
 void BulkData::mark_entity_and_upward_related_entities_as_modified(Entity entity)
 {
-  impl::OnlyVisitUnchanged ovu(*this);
   BulkData& mesh = *this;
 
   auto markAsModified = [&](Entity ent) { mesh.set_state(ent, Modified); };
 
   auto onlyVisitUnchanged = [&](Entity ent) { return mesh.state(ent) == Unchanged; };
 
-  impl::VisitUpwardClosureGeneral(*this, entity, markAsModified, onlyVisitUnchanged);
+  if (mesh.state(entity) == Unchanged) {
+    impl::VisitUpwardClosureGeneral(mesh, entity, markAsModified, onlyVisitUnchanged);
+  }
+  else if (mesh.state(entity) == Modified) {
+
+    EntityRank endRank = static_cast<EntityRank>(mesh_meta_data().entity_rank_count());
+    EntityRank beginRank = static_cast<EntityRank>(entity_rank(entity)+1);
+  
+    for(EntityRank rank=beginRank; rank<endRank; ++rank) {
+      const unsigned numConnected = num_connectivity(entity, rank);
+      if (numConnected > 0) {
+        const Entity* beginConnected = begin(entity, rank);
+        const Entity* endConnected = end(entity, rank);
+        impl::VisitUpwardClosureGeneral(mesh, beginConnected, endConnected, markAsModified, onlyVisitUnchanged);
+      }
+    }
+  }
 }
 
 size_t BulkData::count_relations(Entity entity, bool onlyDownwardRelations) const

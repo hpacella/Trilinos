@@ -834,7 +834,7 @@ static void append_facets_from_triangle_side(const stk::mesh::BulkData & mesh, c
 {
   const std::array<stk::mesh::Entity,3> orientedSideNodes = get_oriented_triangle_side_nodes(mesh, negativeSideElementSelector, side);
 
-  const std::array<Vector3d,3> sideNodeCoords{{Vector3d(field_data<double>(coords, orientedSideNodes[0]), 3), Vector3d(field_data<double>(coords, orientedSideNodes[1]), 3), Vector3d(field_data<double>(coords, orientedSideNodes[2]), 3)}};
+  const std::array<stk::math::Vector3d,3> sideNodeCoords{{stk::math::Vector3d(field_data<double>(coords, orientedSideNodes[0]), 3), stk::math::Vector3d(field_data<double>(coords, orientedSideNodes[1]), 3), stk::math::Vector3d(field_data<double>(coords, orientedSideNodes[2]), 3)}};
   std::unique_ptr<Facet> facet = std::make_unique<Facet3d>( sideNodeCoords[0], sideNodeCoords[1], sideNodeCoords[2] );
   facets.add( std::move(facet) );
 }
@@ -853,7 +853,7 @@ static void append_facets_from_line_side(const stk::mesh::BulkData & mesh, const
 {
   const std::array<stk::mesh::Entity,2> orientedSideNodes = get_oriented_line_side_nodes(mesh, negativeSideElementSelector, side);
 
-  const std::array<Vector3d,2> sideNodeCoords{{Vector3d(field_data<double>(coords, orientedSideNodes[0]), 2), Vector3d(field_data<double>(coords, orientedSideNodes[1]), 2)}};
+  const std::array<stk::math::Vector3d,2> sideNodeCoords{{stk::math::Vector3d(field_data<double>(coords, orientedSideNodes[0]), 2), stk::math::Vector3d(field_data<double>(coords, orientedSideNodes[1]), 2)}};
   std::unique_ptr<Facet> facet = std::make_unique<Facet2d>(sideNodeCoords[0], sideNodeCoords[1]);
   facets.add( std::move(facet) );
 }
@@ -1128,7 +1128,7 @@ LevelSet::compute_continuous_gradient() const
 void
 LevelSet::compute_nodal_bbox( const stk::mesh::Selector & selector,
     BoundingBox & node_bbox,
-    const Vector3d & displacement ) const
+    const stk::math::Vector3d & displacement ) const
 { /* %TRACE[ON]% */ Trace trace__("krino::LevelSet::compute_nodal_bbox( BoundingBox & node_bboxes, const double & deltaTime ) const"); /* %TRACE% */
 
   // find the local nodal bounding box
@@ -1150,7 +1150,7 @@ LevelSet::compute_nodal_bbox( const stk::mesh::Selector & selector,
     for (size_t i = 0; i < length; ++i)
     {
 
-      Vector3d x_bw(Vector3d::ZERO);
+      stk::math::Vector3d x_bw(stk::math::Vector3d::ZERO);
       for ( unsigned dim = 0; dim < spatial_dimension; ++dim )
       {
         int index = i*spatial_dimension+dim;
@@ -1177,7 +1177,7 @@ LevelSet::prepare_to_compute_distance( const double & deltaTime, const stk::mesh
   // nodes on that proc plus the narrow_band size
 
   BoundingBox node_bbox;
-  const Vector3d displacement = deltaTime * get_extension_velocity();
+  const stk::math::Vector3d displacement = deltaTime * get_extension_velocity();
   compute_nodal_bbox( selector, node_bbox, displacement );
 
   facets_old->prepare_to_compute(node_bbox, my_narrow_band_size);
@@ -1193,7 +1193,7 @@ LevelSet::compute_distance_semilagrangian( const double & deltaTime, const stk::
 
   const FieldRef xField = get_coordinates_field();
   const FieldRef dField = get_distance_field();
-  const Vector3d extv = get_extension_velocity();
+  const stk::math::Vector3d extv = get_extension_velocity();
 
   const stk::mesh::Selector active_field_selector = aux_meta().active_not_ghost_selector() & selector & stk::mesh::selectField(dField);
   stk::mesh::BucketVector const& buckets = mesh().get_buckets(stk::topology::NODE_RANK, active_field_selector);
@@ -1215,7 +1215,7 @@ LevelSet::compute_distance_semilagrangian( const double & deltaTime, const stk::
     {
       for (size_t i = 0; i < length; ++i)
       {
-        Vector3d x_node(Vector3d::ZERO);
+        stk::math::Vector3d x_node(stk::math::Vector3d::ZERO);
         for ( unsigned dim = 0; dim < spatial_dimension; ++dim )
         {
           int index = i*spatial_dimension+dim;
@@ -1238,7 +1238,7 @@ LevelSet::compute_distance_semilagrangian( const double & deltaTime, const stk::
     {
       for (size_t i = 0; i < length; ++i)
       {
-        Vector3d x_bw(Vector3d::ZERO);
+        stk::math::Vector3d x_bw(stk::math::Vector3d::ZERO);
         for ( unsigned dim = 0; dim < spatial_dimension; ++dim )
         {
           int index = i*spatial_dimension+dim;
@@ -1264,7 +1264,7 @@ LevelSet::compute_distance( stk::mesh::Entity n,
 
   const FieldRef xField = get_coordinates_field();
   const FieldRef dField = get_distance_field();
-  const Vector3d extv = get_extension_velocity();
+  const stk::math::Vector3d extv = get_extension_velocity();
 
   double *x = field_data<double>( xField , n);
   double *d = field_data<double>( dField , n);
@@ -1275,7 +1275,7 @@ LevelSet::compute_distance( stk::mesh::Entity n,
   // for regular semilagrangian advancement).
   if ( deltaTime == 0. )
   {
-    Vector3d x_node(Vector3d::ZERO);
+    stk::math::Vector3d x_node(stk::math::Vector3d::ZERO);
     for ( unsigned dim = 0; dim < spatial_dimension; ++dim )
     {
       x_node[dim] = x[dim];
@@ -1286,7 +1286,7 @@ LevelSet::compute_distance( stk::mesh::Entity n,
   }
   else
   {
-    Vector3d x_bw(Vector3d::ZERO);
+    stk::math::Vector3d x_bw(stk::math::Vector3d::ZERO);
     for ( unsigned dim = 0; dim < spatial_dimension; ++dim )
     {
       x_bw[dim] = x[dim] - extv[dim] * deltaTime;
@@ -1300,7 +1300,7 @@ LevelSet::compute_distance( stk::mesh::Entity n,
 //-----------------------------------------------------------------------------------
 
 double
-LevelSet::distance( const Vector3d & x,
+LevelSet::distance( const stk::math::Vector3d & x,
 		    const int previous_sign,
 		    const bool enforce_sign ) const
 { /* %TRACE% */  /* %TRACE% */
@@ -1451,10 +1451,10 @@ LevelSet::remove_wall_features() const
           if(std::fabs(dist[n]) > my_max_feature_size) continue;
 
           ContourElement ls_elem( mesh(), elem, coordinates_field, dField );
-          const Vector3d p_coords(1/3., 1/3., 1/3.);
-          const Vector3d grad_dist_vec = ls_elem.distance_gradient(p_coords);
+          const stk::math::Vector3d p_coords(1/3., 1/3., 1/3.);
+          const stk::math::Vector3d grad_dist_vec = ls_elem.distance_gradient(p_coords);
 
-          Vector3d face_normal;
+          stk::math::Vector3d face_normal;
 
           //assume linear tet or tri elements!
           if(spatial_dimension == 2)
@@ -1469,7 +1469,7 @@ LevelSet::remove_wall_features() const
               if(elem_nodes[j] != side_nodes[0] && elem_nodes[j] != side_nodes[spatial_dimension-1])
               {
                 double *coord = field_data<double>(coordinates_field,elem_nodes[j]);
-                const Vector3d vec_check(coord[0]-coords[0][0], coord[1]-coords[0][1], 0);
+                const stk::math::Vector3d vec_check(coord[0]-coords[0][0], coord[1]-coords[0][1], 0);
 
                 if(Dot(face_normal, vec_check) < 0)
                 {
@@ -1481,8 +1481,8 @@ LevelSet::remove_wall_features() const
           }
           else
           {
-            const Vector3d x1 (coords[1][0]-coords[0][0], coords[1][1]-coords[0][1],coords[1][2]-coords[0][2]);
-            const Vector3d x2 (coords[2][0]-coords[0][0], coords[2][1]-coords[0][1],coords[2][2]-coords[0][2]);
+            const stk::math::Vector3d x1 (coords[1][0]-coords[0][0], coords[1][1]-coords[0][1],coords[1][2]-coords[0][2]);
+            const stk::math::Vector3d x2 (coords[2][0]-coords[0][0], coords[2][1]-coords[0][1],coords[2][2]-coords[0][2]);
             face_normal = -1.0*Cross(x1,x2);
           }
 

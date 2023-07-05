@@ -2,6 +2,7 @@
 #define REGULARIZED_DISTORTION_METRIC
 
 #include "distortion_metric.hpp"
+#include <iomanip>
 
 namespace stk {
 namespace middle_mesh {
@@ -14,35 +15,31 @@ namespace impl {
 class RegularizedDistortionMetric : public DistortionMetric
 {
   public:
-    explicit RegularizedDistortionMetric(const double delta = 0)
+    explicit RegularizedDistortionMetric(const double delta = 0, double denominatorMin=1e-6)
       : m_delta(delta)
+      , m_denominatorMin(denominatorMin)
     {}
 
     void set_delta(const double delta) { m_delta = delta * delta; }
 
     double get_value(const TriPts& pts, utils::impl::Mat2x2<double> w) override
     {
-      /*
-      std::cout << "pt1 = " << pts[0] << std::endl;
-      std::cout << "pt2 = " << pts[1] << std::endl;
-      std::cout << "pt3 = " << pts[2] << std::endl;
-      std::cout << "W = " << W << std::endl;
-      */
       auto a = compute_w(pts); // calculation of A is the same as W, just different
                                // data
       // std::cout << "A = " << A << std::endl;
       inverse2x2(w); // W is now Winv
+
       auto s = a * w;
       // std::cout << "S = " << S << std::endl;
       auto num = norm_f(s);
       num      = num * num;
 
       auto den = det2x2(s);
-      // std::cout << "num = " << num << std::endl;
-      // std::cout << "den = " << den << std::endl;
+
       double delta2Val = 0;
-      if (den < m_delta)
-        delta2Val = m_delta * (m_delta - den);
+      if (den < m_denominatorMin)
+        delta2Val = std::abs(m_delta * (m_delta - m_denominatorMin));
+
       auto den2 = (den + std::sqrt(den * den + 4 * delta2Val));
 
       return num / den2;
@@ -50,17 +47,20 @@ class RegularizedDistortionMetric : public DistortionMetric
 
     void get_deriv(const TriPts& pts, utils::impl::Mat2x2<double> w, TriPts& derivs, const double qBar) override
     {
+
+
       auto a = compute_w(pts); // calculation of A is the same as W, just different
                                // data
       inverse2x2(w);           // W is now Winv
+
       auto s    = a * w;
       auto num  = norm_f(s);
       auto num2 = num * num;
 
       auto den         = det2x2(s);
       double delta2Val = 0;
-      if (den < m_delta)
-        delta2Val = m_delta * (m_delta - den);
+      if (den < m_denominatorMin)
+        delta2Val = std::abs(m_delta * (m_delta - m_denominatorMin));
       auto den2 = (den + std::sqrt(den * den + 4 * delta2Val));
 
       // auto q =  num2/den2;
@@ -70,9 +70,6 @@ class RegularizedDistortionMetric : public DistortionMetric
       auto den2Bar = -num2 / (den2 * den2) * qBar;
 
       auto denBar       = den2Bar + den2Bar * den / std::sqrt(den * den + 4 * delta2Val);
-      auto delta2ValBar = 2 * den2Bar / std::sqrt(den * den + 4 * delta2Val);
-      if (den < m_delta)
-        denBar += -m_delta * delta2ValBar;
 
       utils::impl::Mat2x2<double> sBar;
       det2x2_rev(s, sBar, denBar);
@@ -117,18 +114,19 @@ class RegularizedDistortionMetric : public DistortionMetric
       auto den            = det2x2(s);
       auto denDot         = det2x2_dot(s, sDot);
       double delta2Val    = 0;
-      DotVec delta2ValDot = {0, 0};
-      if (den < m_delta)
+      if (den < m_denominatorMin)
       {
-        delta2Val = m_delta * (m_delta - den);
-        for (int i = 0; i < DOT_VEC_LEN; ++i)
-          delta2ValDot[i] = -m_delta * denDot[i];
+        delta2Val = std::abs(m_delta * (m_delta - m_denominatorMin));
       }
       auto valTmp = std::sqrt(den * den + 4 * delta2Val);
+      DotVec valTmpDot;
+      for (int i=0; i < DOT_VEC_LEN; ++i)
+        valTmpDot[i] = den * denDot[i]/valTmp;
+
       auto den2   = (den + valTmp);
       std::array<T, DOT_VEC_LEN> den2Dot;
       for (int i = 0; i < DOT_VEC_LEN; ++i)
-        den2Dot[i] = denDot[i] + den * denDot[i] / valTmp + 2 * delta2ValDot[i] / valTmp;
+        den2Dot[i] = denDot[i] + valTmpDot[i];
 
       // auto q =  num2/den2;
       //----------------------------------
@@ -144,25 +142,16 @@ class RegularizedDistortionMetric : public DistortionMetric
       }
 
       auto denBar       = den2Bar + den2Bar * den / valTmp;
-      auto delta2ValBar = 2 * den2Bar / valTmp;
+      //auto delta2ValBar = 2 * den2Bar / valTmp;
 
-      std::array<T, DOT_VEC_LEN> denBarDot, delta2ValBarDot;
-      auto denTmp = std::pow(valTmp, 3);
+      std::array<T, DOT_VEC_LEN> denBarDot;      
       for (int i = 0; i < DOT_VEC_LEN; ++i)
       {
-        denBarDot[i] =
-            den2BarDot[i] + den2BarDot[i] * den / valTmp +
-            den2Bar * (denDot[i] / valTmp - den * den * denDot[i] / denTmp + -2 * den * delta2ValDot[i] / denTmp);
-        delta2ValBarDot[i] = 2 * den2BarDot[i] / valTmp + -2 * den2Bar * den * denDot[i] / denTmp +
-                             -4 * den2Bar * delta2ValDot[i] / denTmp;
+        double t1 = den2Bar * den;
+        double t1Dot = den2BarDot[i] * den + den2Bar * denDot[i];
+        denBarDot[i] = den2BarDot[i] + (t1Dot * valTmp - t1 * valTmpDot[i])/(valTmp*valTmp);
       }
 
-      if (den < m_delta)
-      {
-        denBar += -m_delta * delta2ValBar;
-        for (int i = 0; i < DOT_VEC_LEN; ++i)
-          denBarDot[i] += -m_delta * delta2ValBarDot[i];
-      }
 
       utils::impl::Mat2x2<double> sBar;
       det2x2_rev(s, sBar, denBar);
@@ -192,6 +181,7 @@ class RegularizedDistortionMetric : public DistortionMetric
 
   private:
     double m_delta;
+    double m_denominatorMin;
 };
 
 } // namespace impl
